@@ -1,13 +1,13 @@
-# hash_join_using_warpcore
-Created a simple hash join between two tables using warpcore library.
+# Hash Join Using Warpcore
 
-How to compile and run this project?
-->Change the directory to the root of this project. 
-From the root run the following commands.
-mkdir build
-cd build
-cmake ..
-make
+This project demonstrates a simple hash join between two tables using the Warpcore library.
 
-After this to run the excutable
-./hash_join_warpcore
+## How to Compile and Run this Project?
+
+To compile and run this project, follow these steps:
+
+1. **Change Directory:**
+   Navigate to the root directory of this project.
+
+   ```bash
+   cd path/to/hash_join_using_warpcore
