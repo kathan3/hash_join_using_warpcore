@@ -6,7 +6,7 @@ This project demonstrates a simple hash join between two tables using the Warpco
 
 To compile and run this project, follow these steps:
 
-1. **Change Directory:**
+ **Change Directory:**
    Navigate to the root directory of this project.
 
    ```bash
