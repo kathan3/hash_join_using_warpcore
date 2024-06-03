@@ -16,4 +16,7 @@ To compile and run this project, follow these steps:
    make
    ./hash_join_warpcore
    ```
+### Note:
+
+There will be more updates to the repo.
       
