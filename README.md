@@ -1,6 +1,6 @@
 # Hash Join Using Warpcore
 
-This project demonstrates a simple hash join between two tables using the Warpcore library.
+This project demonstrates a hash join between two tables using the Warpcore library.
 
 ## How to Compile and Run this Project?
 
