@@ -12,7 +12,7 @@ CPMAddPackage(
 )
  
 # Define your target
-add_executable(hash_join_warpcore src/hash_join_static_map.cu)
+add_executable(hash_join_warpcore src/hash_join_single_map.cu)
 
 # Link cuco to your target
 target_link_libraries(hash_join_warpcore PRIVATE warpcore)
