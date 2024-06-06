@@ -205,6 +205,7 @@ int main(int argc, char** argv) {
 
     output_fetch_time.start();
     std::ofstream output(output_file);
+    int result_size = 0;
     if (!output.is_open()) {
         std::cerr << "Error: Could not open output file " << output_file << std::endl;
         return 1;
@@ -212,6 +213,7 @@ int main(int argc, char** argv) {
 
     for (uint64_t i = 0; i < input_size_second; i++) {
         if (result_h[i] != static_cast<value_t>(-1)) { // Assuming -1 denotes no match
+            result_size++;
             for (const auto& cell : table_data_first[result_h[i]]) {
                 output << cell << "|";
             }
@@ -240,7 +242,8 @@ int main(int argc, char** argv) {
     std::cout << "Time for transferring the join result from device to host: " << result_transfer_time.getDuration() << " ms" << std::endl;
     std::cout << "Time for fetching final output from both tables: " << output_fetch_time.getDuration() << " ms" << std::endl;
     std::cout << "Total time for hash-join: " << transfer_time.getDuration()+ hash_table_time.getDuration()+probing_time.getDuration()+result_transfer_time.getDuration()+output_fetch_time.getDuration() << " ms" << std::endl;
-
     std::cout << "Join results written to " << output_file << std::endl;
+    std::cout << "Result size: " << result_size << std::endl;
+
     return 0;
 }
