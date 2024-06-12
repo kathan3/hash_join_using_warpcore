@@ -8,26 +8,7 @@
 #include <ctime>
 #include <iomanip>
 #include <warpcore/single_value_hash_table.cuh>
-
-// Simple Timer class for measuring durations
-class Timer {
-public:
-    void start() {
-        start_time = std::chrono::high_resolution_clock::now();
-    }
-
-    void stop() {
-        end_time = std::chrono::high_resolution_clock::now();
-    }
-
-    double getDuration() const {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-    }
-
-private:
-    std::chrono::high_resolution_clock::time_point start_time;
-    std::chrono::high_resolution_clock::time_point end_time;
-};
+#include <helpers/timers.cuh>
 
 // Helper function to read CSV file and extract all columns and specified key column
 void read_csv(const std::string& filename, std::vector<std::vector<std::string>>& table_data, std::vector<uint32_t>& keys, std::vector<uint32_t>& row_identifiers, int key_col_index) {
@@ -86,9 +67,6 @@ int main(int argc, char** argv) {
 
     std::string output_file = "join_output_" + get_timestamp() + ".txt";
 
-     // Declare timers for measuring each operation
-    Timer transfer_time, hash_table_time, probing_time, result_transfer_time, output_fetch_time;
-
     using key_t = std::uint32_t;
     using value_t = std::uint32_t;
     using namespace warpcore;
@@ -111,7 +89,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    transfer_time.start();
     key_t *keys_d_first, *keys_d_second;
     value_t *row_identifiers_d_first, *row_identifiers_d_second;
     cudaError_t err;
@@ -169,9 +146,8 @@ int main(int argc, char** argv) {
         std::cerr << "Error: cudaMemcpy row_identifiers_d_second failed with " << cudaGetErrorString(err) << std::endl;
         return 1;
     }
-    transfer_time.stop();
 
-    hash_table_time.start();
+    helpers::GpuTimer timer("table_build");
     const float load = 0.9;
     const uint64_t capacity_first = input_size_first / load;
 
@@ -179,21 +155,18 @@ int main(int argc, char** argv) {
 
     hash_table_first.insert(keys_d_first, row_identifiers_d_first, input_size_first);
     cudaDeviceSynchronize();
-    hash_table_time.stop();
+    timer.print();
 
-    probing_time.start();
+    helpers::GpuTimer retrievetimer("retrieve");
     value_t *result_d;
     err = cudaMalloc(&result_d, sizeof(value_t) * input_size_second);
     if (err != cudaSuccess) {
         std::cerr << "Error: cudaMalloc result_d failed with " << cudaGetErrorString(err) << std::endl;
         return 1;
     }
-
     hash_table_first.retrieve(keys_d_second, input_size_second, result_d);
+    retrievetimer.print();
 
-    probing_time.stop();
-
-    result_transfer_time.start();
     value_t* result_h = new value_t[input_size_second];
     err = cudaMemcpy(result_h, result_d, sizeof(value_t) * input_size_second, cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
@@ -201,9 +174,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    result_transfer_time.stop();
+    cudaDeviceSynchronize();
 
-    output_fetch_time.start();
+
     std::ofstream output(output_file);
     int result_size = 0;
     if (!output.is_open()) {
@@ -224,7 +197,6 @@ int main(int argc, char** argv) {
             output << std::endl;
         }
     }
-     output_fetch_time.stop();
 
     delete[] result_h;
     cudaFree(keys_d_first);
@@ -235,13 +207,6 @@ int main(int argc, char** argv) {
     cudaDeviceSynchronize();
 
     output.close();
-    // Print the time for each operation
-    std::cout << "Time for transferring keys and data from host to device for both the table: " << transfer_time.getDuration() << " ms" << std::endl;
-    std::cout << "Time for hash table creation and insertion for table 1: " << hash_table_time.getDuration() << " ms" << std::endl;
-    std::cout << "Time for probing the hash table: " << probing_time.getDuration() << " ms" << std::endl;
-    std::cout << "Time for transferring the join result from device to host: " << result_transfer_time.getDuration() << " ms" << std::endl;
-    std::cout << "Time for fetching final output from both tables: " << output_fetch_time.getDuration() << " ms" << std::endl;
-    std::cout << "Total time for hash-join: " << transfer_time.getDuration()+ hash_table_time.getDuration()+probing_time.getDuration()+result_transfer_time.getDuration()+output_fetch_time.getDuration() << " ms" << std::endl;
     std::cout << "Join results written to " << output_file << std::endl;
     std::cout << "Result size: " << result_size << std::endl;
 
